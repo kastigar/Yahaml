@@ -10,7 +10,7 @@ abstract class AbstractReader implements Reader
      * (non-PHPdoc)
      * @see Yahaml\Io\Reader::getNextLine()
      */
-    public function getNextLine($forceLevel = null)
+    public function getNextLine()
     {
         $line = $this->_getRawLine();
 
@@ -23,7 +23,7 @@ abstract class AbstractReader implements Reader
             $this->_eod = true;
         }
 
-        return new Line($line, $this, $forceLevel);
+        return new Line($line, $this);
     }
 
     public function getIndentation()

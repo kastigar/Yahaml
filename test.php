@@ -18,20 +18,25 @@ $template = <<<'EOL'
             %img
             %br
         .content
+            - $a = "string"
             .rounded
+            #ided
+            #merged.class
+            .class.class2
+            .class?{$a == 'string'}
+            .class|class2?{$a == 'string2'}
             / nested comment
                 aaaaaa
                 bbbbbb
                 %p
                     test
                 = "ccccc"
-            %input(type=text value=test)
+            %input[type=text value=test]
             = "Test<b>b</b>"
             &= "Test<b>b</b>"
             != "Test<b>b</b>"
             Raw <i>Line</i>
             / inline comment
-            - $a = "string"
             = $a
         .footer
 EOL;

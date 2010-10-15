@@ -2,6 +2,7 @@
 namespace Yahaml;
 
 use Exception,
+    Yahaml\Io\Line,
     Yahaml\Io\Reader,
     Yahaml\Io\Writer,
     Yahaml\Io\StringWriter;
@@ -101,59 +102,59 @@ class Compiler
                 case '%':
                 case '#':
                 case '.':
-                    $node = $this->_parseTag($line());
+                    $node = $this->_parseTag($line);
                     break;
 
                 case '/':
-                    $node = new Node\XmlComment($line(1));
+                    $node = new Node\XmlComment($line->skip());
                     break;
 
                 case '=':
-                    $node = new Node\EchoStatement($line(1), $escape);
+                    $node = new Node\EchoStatement($line->skip(), $escape);
                     break;
 
                 case '-':
-                    $node = new Node\PhpStatement($line(1));
+                    $node = new Node\PhpStatement($line->skip());
                     break;
 
                 case '&':
-                    if ($line(0, 3) == '&==') {
-                        $node = new Node\PlainText($line(3), true);
+                    if ($line->match('&==')) {
+                        $node = new Node\PlainText($line, true);
                     } elseif ($line[1] == '=') {
-                        $node = new Node\EchoStatement($line(2), true);
+                        $node = new Node\EchoStatement($line->skip(2), true);
                     } elseif ($line[1] == ' ') {
-                        $node = new Node\PlainText($line(2), true);
+                        $node = new Node\PlainText($line->skip(2), true);
                     } else {
-                        $node = new Node\PlainText($line(), true);
+                        $node = new Node\PlainText($line);
                     }
 
                     break;
 
                 case '!':
-                    if ($line(0, 3) == '!!!') {
-                        $node = new Node\Doctype($line(3), false);
-                    } elseif ($line(0, 3) == '&==') {
-                        $node = new Node\PlainText($line(3), false);
+                    if ($line->match('!!!')) {
+                        $node = new Node\Doctype($line);
+                    } elseif ($line->match('!==')) {
+                        $node = new Node\PlainText($line, false);
                     } elseif ($line[1] == '=') {
-                        $node = new Node\EchoStatement($line(2), false);
+                        $node = new Node\EchoStatement($line->skip(2), false);
                     } elseif ($line[1] == ' ') {
-                        $node = new Node\PlainText($line(2), false);
+                        $node = new Node\PlainText($line->skip(2), false);
                     } else {
-                        $node = new Node\PlainText($line(), false);
+                        $node = new Node\PlainText($line);
                     }
 
                     break;
 
                 case '\\':
-                    $node = new Node\PlainText($line(1), $escape);
+                    $node = new Node\PlainText($line->skip(), $escape);
                     break;
 
                 case ':':
-                    $node = new Node\PlainText($line(), $escape);
+                    $node = new Node\PlainText($line->skip(), $escape);
                     break;
 
                 default:
-                    $node = new Node\PlainText($line(), $escape);
+                    $node = new Node\PlainText($line, $escape);
             }
 
             $levelDiff = $nextLine->indentLevel - $line->indentLevel;
@@ -188,28 +189,21 @@ class Compiler
         }
     }
 
-    protected function _parseTag($line)
+    protected function _parseTag(Line $line)
+    {
+        $tag = $line->match('%([\w\-:]+)') ? $line->matches[1] : 'div';
+        $class = $this->_findTagClass($tag);
+
+        return new $class($line, $tag);
+    }
+
+    protected function _findTagClass($tag)
     {
         static $autoclose = array('meta', 'img', 'link', 'br', 'hr', 'input', 'area', 'param', 'col', 'base');
 
-        if ($line[0] != '%') {
-            $tag = 'div';
-        } else {
-            if (!preg_match('~^%(.*?)([.#({[=\s]|$)~', $line, $matches)) {
-                throw new Exception("...");
-            }
+        // find own class in namespaces
 
-            $tag = $matches[1];
-            $line = substr($line, strlen($tag) + 1);
-        }
-
-        // check own class
-
-        if (in_array($tag, $autoclose)) {
-            return new Node\AutocloseTag($line, $tag);
-        }
-
-        return new Node\Tag($line, $tag);
+        return '\Yahaml\Node\\' . (in_array($tag, $autoclose) ? 'AutocloseTag' : 'Tag');
     }
 
     /**

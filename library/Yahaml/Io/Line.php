@@ -13,9 +13,23 @@ class Line implements \ArrayAccess
     /**
      * Enter description here ...
      * 
+     * @var array
+     */
+    public $matches;
+
+    /**
+     * Enter description here ...
+     * 
      * @var string
      */
-    private static $_indentation;
+    protected static $_indentation;
+
+    /**
+     * Text from current position
+     * 
+     * @var string
+     */
+    protected $_text;
 
     public function __construct($rawString, $reader)
     {
@@ -26,7 +40,7 @@ class Line implements \ArrayAccess
      * @param offset
      * @return boolean
      */
-    public function offsetExists ($offset)
+    public function offsetExists($offset)
     {
         return isset($this->_text[$offset]);
     }
@@ -35,8 +49,9 @@ class Line implements \ArrayAccess
      * @param offset
      * @return string
      */
-    public function offsetGet ($offset)
+    public function offsetGet($offset)
     {
+        if (strlen($this->_text) == 0) debug_print_backtrace();
         return $this->_text[$offset];
     }
 
@@ -45,7 +60,7 @@ class Line implements \ArrayAccess
      * @param value
      * @throws \Exception
      */
-    public function offsetSet ($offset, $value)
+    public function offsetSet($offset, $value)
     {
         throw new \Exception("\Yahaml\Strem\Line has read-only access.");
     }
@@ -54,24 +69,48 @@ class Line implements \ArrayAccess
      * @param offset
      * @throws \Exception
      */
-    public function offsetUnset ($offset)
+    public function offsetUnset($offset)
     {
         throw new \Exception("\Yahaml\Strem\Line has read-only access.");
     }
 
     /**
-     * Return substing for text.
+     * Enter description here ...
      * 
-     * $line($start, $len) === substr($line->_text, $start, $len)
-     * 
-     * @param integer $start
-     * @param integer $length
-     * @return string
+     * @param string $pattern
+     * @param string $token
      */
-    public function __invoke($start = 0, $length = null)
+    public function match($pattern, $token = '~')
     {
-        return isset($length) ? substr($this->_text, $start, $length)
-                              : substr($this->_text, $start);
+        if (!preg_match($token . '^' . $pattern . $token, $this->_text, $this->matches)) {
+            return false;
+        }
+
+        $this->skip(strlen($this->matches[0]));
+
+        return true;
+    }
+
+    /**
+     * Enter description here ...
+     * 
+     * @param integer $len
+     * @return Yahaml\Io\Line
+     */
+    public function skip($len = 1)
+    {
+        if (strlen($this->_text) > $len) {
+            $this->_text = substr($this->_text, $len);
+        } else {
+            $this->_text = '';
+        }
+
+        return $this;
+    }
+
+    public function __toString()
+    {
+        return $this->_text;
     }
 
     protected function _getIndentLevel($rawString, $reader)

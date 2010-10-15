@@ -1,26 +1,27 @@
 <?php
 namespace Yahaml\Node;
 
+use \Yahaml\Io\Line;
+
 class EchoStatement extends AbstractNode
 {
     protected $_nestable = false;
     protected $_text;
-    protected $_escape;
 
-    public function __construct($text, $escape)
+    public function __construct(Line $line, $escape)
     {
-        $this->_text = trim($text);
-        $this->_escape = (boolean) $escape;
+        $text = trim((string) $line);
+        $text = rtrim($text, ';');
+
+        if ($escape) {
+            $text = 'escape(' . $text . ')';
+        }
+
+        $this->_text = $text;
     }
 
     public function render($nested)
     {
-        if ($this->_escape) {
-            $text = 'escape(' . rtrim($this->_text, ';') . ')';
-        } else {
-            $text = $this->_text;
-        }
-
-        return '<' . '?php echo ' . $text . ' ?' . '>';
+        return '<' . '?php echo ' . $this->_text . ' ?' . '>';
     }
 }

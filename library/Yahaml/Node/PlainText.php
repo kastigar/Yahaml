@@ -1,14 +1,16 @@
 <?php
 namespace Yahaml\Node;
 
+use \Yahaml\Io\Line;
+
 class PlainText extends AbstractNode
 {
     protected $_nestable = false;
     protected $_text;
 
-    public function __construct($text, $escape)
+    public function __construct(Line $line, $escape = false)
     {
-        $this->_text = $text;
+        $this->_text = (string) $line;
         $this->_escape = (boolean) $escape;
     }
 
